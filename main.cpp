@@ -87,9 +87,10 @@ public:
     void AddDocument(int document_id, const string &document)
     {
         const vector<string> words = SplitIntoWordsNoStop(document);
+        double tf = 1.0/words.size();
         for(string word: words)
         {
-            word_to_documents_freqs_[word][document_id] += 1.0/words.size();
+            word_to_documents_freqs_[word][document_id] += tf;
         }
         ++document_count_;
     }
@@ -121,8 +122,8 @@ public:
 private:
     struct Query
     {
-        set<string> plusword;
-        set<string> minusword;
+        set<string> plus_word;
+        set<string> minus_word;
     };
 
     int document_count_ = 0;
@@ -143,6 +144,20 @@ private:
         return words;
     }
 
+    map<char, string> PlusOrMinus (const string& word) const
+    {
+        map <char, string> pn_words;
+        if (word[0] == '-')
+        {
+            pn_words ['-'] = word.substr(1);
+        }
+        else
+        {
+            pn_words ['+'] = word;
+        }
+        return pn_words;
+    }
+
     Query ParseQuery(const string& text) const
     {
         set<string> query_words;
@@ -154,28 +169,38 @@ private:
         Query processed_query;
         for (string word : query_words)
         {
-            if (word[0] == '-') {processed_query.minusword.insert(word.substr(1));}
-            else {processed_query.plusword.insert(word);}
-        }
+            if (PlusOrMinus(word).count('-'))
+                {
+                processed_query.minus_word.insert(word);
+                }
+            else processed_query.plus_word.insert(word);
+         }
+
         return processed_query;
     }
+
+    double CalcIDF(const double& word_in_doc_count) const
+    {
+    return log(document_count_/word_in_doc_count);
+    }
+
     vector<Document> FindAllDocuments(const Query& query_words) const
     {
         vector<Document> matched_documents;
         map<int, double> document_to_relevance;
 
-        for(const string& plusw: query_words.plusword)
+        for(const string& plusw: query_words.plus_word)
         {
             if (word_to_documents_freqs_.count(plusw))
             {
-                double idf =  (double)log(document_count_/(double)word_to_documents_freqs_.at(plusw).size());
+                double idf = CalcIDF(static_cast<double>(word_to_documents_freqs_.at(plusw).size()));
                 for (auto& [doc,freqs]: word_to_documents_freqs_.at(plusw))
                 {
                     document_to_relevance[doc] += freqs * idf;
                 }
             }
         }
-        for(const string& minusw: query_words.minusword){
+        for(const string& minusw: query_words.minus_word){
             if(word_to_documents_freqs_.count(minusw))
             {
                 for (auto& [doc,freqs]: word_to_documents_freqs_.at(minusw))
