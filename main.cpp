@@ -144,7 +144,6 @@ private:
         return words;
     }
 
-
     map<char, string> PlusOrMinus (const string& word) const
     {
         map <char, string> pn_words;
@@ -157,18 +156,6 @@ private:
             pn_words ['+'] = word;
         }
         return pn_words;
-
-    Query ModyfyWord(set<string>& query_words) const
-    {
-        Query processed_query;
-        for (string word : query_words)
-        {
-            if (word[0] == '-') {processed_query.minus_word.insert(word.substr(1));}
-            else {processed_query.plus_word.insert(word);}
-        }
-
-        return processed_query;
-
     }
 
     Query ParseQuery(const string& text) const
