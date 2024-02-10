@@ -167,19 +167,8 @@ private:
                 processed_query.minus_word.insert(word);
                 }
             else processed_query.plus_word.insert(word);
-            //query_words.insert(word);
         }
 
- /*       Query processed_query;
-        for (string word : query_words)
-        {
-            if (PlusOrMinus(word).count('-'))
-                {
-                processed_query.minus_word.insert(word);
-                }
-            else processed_query.plus_word.insert(word);
-        }
-*/
         return processed_query;
 
     }
