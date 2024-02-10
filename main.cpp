@@ -8,7 +8,8 @@
 
 
 using namespace std;
-const int MAX_RESULT_DOCUMENT_COUNT = 5;
+//const int MAX_RESULT_DOCUMENT_COUNT = 5;
+
 string ReadLine()
 {
     string s;
@@ -50,36 +51,11 @@ vector<string> SplitIntoWords(const string &text)
 
     return words;
 }
-
-set<string> ParseStopWords(const string &text)
-{
-    set<string> stop_words;
-    for (const string &word : SplitIntoWords(text))
+    struct Document
     {
-        stop_words.insert(word);
-    }
-    return stop_words;
-}
-struct Document
-{
-    int id;
-    double relevance;
-};
-
-
-vector<string> SplitIntoWordsNoStop(const string &text, const set<string> &stop_words)
-{
-    vector<string> words;
-    for (const string &word : SplitIntoWords(text))
-    {
-        if (stop_words.count(word) == 0)
-        {
-            words.push_back(word);
-        }
-    }
-    return words;
-}
-
+        int id;
+        double relevance;
+    };
 
 class SearchServer
 {
@@ -126,10 +102,23 @@ private:
         set<string> minus_word;
     };
 
+
+
     int document_count_ = 0;
     map<string, map<int, double>> word_to_documents_freqs_;
     set<string> stop_words_;
-    int MAX_RESULT_DOCUMENT_COUNT = 5;
+    const int MAX_RESULT_DOCUMENT_COUNT = 5;
+
+    set<string> ParseStopWords(const string &text) const
+    {
+        set<string> stop_words;
+        for (const string &word : SplitIntoWords(text))
+        {
+            stop_words.insert(word);
+        }
+        return stop_words;
+    }
+
 
     vector<string> SplitIntoWordsNoStop(const string &text) const
     {
@@ -157,16 +146,31 @@ private:
         }
         return pn_words;
     }
+/*
+    class WordStats{
+        public :
+
+
+
+    };
+*/
+
 
     Query ParseQuery(const string& text) const
     {
+        Query processed_query;
         set<string> query_words;
-        for (const string& word : SplitIntoWordsNoStop(text))
+        for (const string& word : SplitIntoWordsNoStop (text)) //заменить на просто сплит
         {
-            query_words.insert(word);
+            if (PlusOrMinus(word).count('-'))
+                {
+                processed_query.minus_word.insert(word);
+                }
+            else processed_query.plus_word.insert(word);
+            //query_words.insert(word);
         }
 
-        Query processed_query;
+ /*       Query processed_query;
         for (string word : query_words)
         {
             if (PlusOrMinus(word).count('-'))
@@ -174,15 +178,15 @@ private:
                 processed_query.minus_word.insert(word);
                 }
             else processed_query.plus_word.insert(word);
-         }
-
+        }
+*/
         return processed_query;
 
     }
 
     double CalcIDF(const double& word_in_doc_count) const
     {
-    return log(document_count_/word_in_doc_count);
+        return log(document_count_/word_in_doc_count);
     }
 
     vector<Document> FindAllDocuments(const Query& query_words) const

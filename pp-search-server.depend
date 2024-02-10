@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1707505605 source:g:\linux\yandex\yandexstudy\cpp-search-server\main.cpp
+1707509707 source:g:\linux\yandex\yandexstudy\cpp-search-server\main.cpp
 	<algorithm>
 	<cmath>
 	<iostream>
