@@ -136,6 +136,12 @@ private:
     map<char, string> PlusOrMinus (const string& word) const
     {
         map <char, string> pn_words;
+        if (stop_words_.count(word))
+        {
+            pn_words ['s'] = word;
+            return pn_words;
+        }
+
         if (word[0] == '-')
         {
             pn_words ['-'] = word.substr(1);
@@ -146,27 +152,21 @@ private:
         }
         return pn_words;
     }
-/*
-    class WordStats{
-        public :
-
-
-
-    };
-*/
-
 
     Query ParseQuery(const string& text) const
     {
         Query processed_query;
         set<string> query_words;
-        for (const string& word : SplitIntoWordsNoStop (text)) //заменить на просто сплит
+        for (const string& word : SplitIntoWords (text))
         {
             if (PlusOrMinus(word).count('-'))
                 {
                 processed_query.minus_word.insert(word);
                 }
-            else processed_query.plus_word.insert(word);
+            else if (PlusOrMinus(word).count('+'))
+                {
+                processed_query.plus_word.insert(word);
+                }
         }
 
         return processed_query;
