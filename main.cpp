@@ -8,7 +8,7 @@
 
 
 using namespace std;
-//const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const int MAX_RESULT_DOCUMENT_COUNT = 5;
 
 string ReadLine()
 {
@@ -102,22 +102,17 @@ private:
         set<string> minus_word;
     };
 
+    struct QueryWord
+    {
+        string word;
+        bool stop_word;
+        bool minus_word;
 
+    };
 
     int document_count_ = 0;
     map<string, map<int, double>> word_to_documents_freqs_;
     set<string> stop_words_;
-    const int MAX_RESULT_DOCUMENT_COUNT = 5;
-
-    set<string> ParseStopWords(const string &text) const
-    {
-        set<string> stop_words;
-        for (const string &word : SplitIntoWords(text))
-        {
-            stop_words.insert(word);
-        }
-        return stop_words;
-    }
 
 
     vector<string> SplitIntoWordsNoStop(const string &text) const
@@ -133,42 +128,40 @@ private:
         return words;
     }
 
-    map<char, string> PlusOrMinus (const string& word) const
+    bool IsStopWord(const string& word) const
     {
-        map <char, string> pn_words;
-        if (stop_words_.count(word))
-        {
-            pn_words ['s'] = word;
-            return pn_words;
-        }
+        return stop_words_.count(word) > 0;
+    }
 
+    QueryWord ParseQueryWord(string word) const
+    {
+        bool is_minus = false;
         if (word[0] == '-')
         {
-            pn_words ['-'] = word.substr(1);
+            is_minus = true;
+            word = word.substr(1);
         }
-        else
-        {
-            pn_words ['+'] = word;
-        }
-        return pn_words;
+        return { word, IsStopWord(word), is_minus };
     }
 
     Query ParseQuery(const string& text) const
     {
         Query processed_query;
-        set<string> query_words;
         for (const string& word : SplitIntoWords (text))
         {
-            if (PlusOrMinus(word).count('-'))
+            QueryWord processed_word = ParseQueryWord(word);
+            if (!processed_word.stop_word)
                 {
-                processed_query.minus_word.insert(word);
-                }
-            else if (PlusOrMinus(word).count('+'))
-                {
-                processed_query.plus_word.insert(word);
+                    if(processed_word.minus_word)
+                    {
+                        processed_query.minus_word.insert(processed_word.word);
+                    }
+                    else
+                    {
+                        processed_query.plus_word.insert(word);
+                    }
                 }
         }
-
         return processed_query;
 
     }
@@ -237,3 +230,11 @@ int main()
         cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s << endl;
     }
 }
+/*
+и в на
+3
+белый кот и модный ошейник
+пушистый кот пушистый хвост
+ухоженный пёс выразительные глаза
+пушистый ухоженный кот ошейник
+*/
