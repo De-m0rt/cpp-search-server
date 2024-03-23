@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include <optional>
+#include <numeric>
 
 using namespace std;
 
@@ -97,10 +98,6 @@ public:
         : SearchServer(
             SplitIntoWords(stop_words_text))  // Invoke delegating constructor from string container
     {
-        for(string word : stop_words_)
-        {
-            if(!IsValidWord(word)) throw invalid_argument("invalid_argument"s);
-        }
     }
 
     void AddDocument(int document_id, const string& document, DocumentStatus status, const vector<int>& ratings)
@@ -113,6 +110,7 @@ public:
             word_to_document_freqs_[word][document_id] += inv_word_count;
         }
         documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
+        document_id_.push_back(document_id);
     }
 
    template <typename DocumentPredicate>
@@ -120,22 +118,15 @@ public:
    {
         vector<Document> matched_documents;
         const Query query = ParseQuery(raw_query);
-        for (string tmp : query.minus_words)
-        {
-            if (tmp.size() == 0 || tmp.at(0) == '-' || !IsValidWord(tmp) ) throw invalid_argument("invalid_argument"s);
-        }
-        for (string tmp : query.plus_words)
-        {
-            if (!IsValidWord(tmp)) throw invalid_argument("invalid_argument"s);
-        }
+        double Epsiolon = 1e-6;
         matched_documents = FindAllDocuments(query, document_predicate);
         sort(matched_documents.begin(), matched_documents.end(),
-             [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < 1e-6) {
+             [Epsiolon](const Document& lhs, const Document& rhs) {
+                 if (abs(lhs.relevance - rhs.relevance) < Epsiolon) {
                      return lhs.rating > rhs.rating;
-                 } else {
-                     return lhs.relevance > rhs.relevance;
                  }
+                     return lhs.relevance > rhs.relevance;
+
              });
         if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
             matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
@@ -161,20 +152,12 @@ public:
     int GetDocumentId(int index) const
     {
         if (index < 0 || index >= GetDocumentCount()) throw out_of_range("out_of_range"s);
-        int i = 0;
-        for(auto [k,v] : documents_)
-        {
-            if (i == index) return k;
-            ++i;
-        }
-        throw out_of_range("out_of_range"s);
+        return document_id_.at(index);
     }
 
     tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const
     {
         const Query query = ParseQuery(raw_query);
-        for(auto tmp: query.minus_words) if (!IsValidWord(tmp)){ throw invalid_argument("invalid_argument"s); }
-        for(auto tmp: query.plus_words)  if (!IsValidWord(tmp)){ throw invalid_argument("invalid_argument"s); }
         vector<string> matched_words;
         for (const string& word : query.plus_words) {
             if (word_to_document_freqs_.count(word) == 0) {
@@ -216,6 +199,7 @@ private:
     const set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
+    vector<int> document_id_;
 
     bool IsStopWord(const string& word) const { return stop_words_.count(word) > 0; }
 
@@ -241,10 +225,11 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
+        int rating_sum = accumulate(begin(ratings), end(ratings), 0);
+     /*   for (const int rating : ratings) {
             rating_sum += rating;
         }
+      */
         return rating_sum / static_cast<int>(ratings.size());
     }
 
@@ -252,11 +237,12 @@ private:
     QueryWord ParseQueryWord(string text) const {
         bool is_minus = false;
         // Word shouldn't be empty
-        if (text[0] == '-') {
-                if (static_cast<int>(text.size()) == 1 || text[1] == '-' || text[1] == ' ') throw invalid_argument("invalid_argument"s);
+        if (text[0] == '-')
+        {
             is_minus = true;
             text = text.substr(1);
         }
+        if (text.size() == 0 || text.at(0) == '-' || !IsValidWord(text) ) throw invalid_argument("invalid_argument"s);
         return {text, is_minus, IsStopWord(text)};
     }
 
