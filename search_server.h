@@ -80,11 +80,11 @@ SearchServer::SearchServer(const StringContainer& stop_words)
 template <typename DocumentPredicate>
 std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_query, DocumentPredicate document_predicate) const {
     const auto query = ParseQuery(raw_query);
-
+    double Epsilon = 1e-6;
     auto matched_documents = FindAllDocuments(query, document_predicate);
 
-    sort(matched_documents.begin(), matched_documents.end(), [](const Document& lhs, const Document& rhs) {
-        if (std::abs(lhs.relevance - rhs.relevance) < 1e-6) {
+    sort(matched_documents.begin(), matched_documents.end(), [Epsilon](const Document& lhs, const Document& rhs) {
+        if (std::abs(lhs.relevance - rhs.relevance) < Epsilon) {
             return lhs.rating > rhs.rating;
         } else {
             return lhs.relevance > rhs.relevance;
