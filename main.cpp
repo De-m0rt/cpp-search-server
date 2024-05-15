@@ -8,7 +8,7 @@ using namespace std;
 
 
 int main() {
-    setlocale(LC_ALL, "Russian");
+    setlocale(LC_ALL, "Russian"); //sdfd
     std::vector<std::vector<Document>> k;
     SearchServer search_server("and in at"s);
     RequestQueue request_queue(search_server);
